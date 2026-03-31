@@ -141,7 +141,13 @@ const WalletPage = () => {
               <ArrowDownLeft className="w-4 h-4" /> Deposit
             </Button>
             <Button
-              onClick={() => { resetForm(); setFormMode("withdraw"); }}
+              onClick={() => {
+                if ((profile?.balance ?? 0) <= 0) {
+                  toast.error("Insufficient balance. You have ₹0 available.");
+                  return;
+                }
+                resetForm(); setFormMode("withdraw");
+              }}
               variant="secondary"
               className="flex-1 h-10 font-semibold text-sm gap-2"
             >
