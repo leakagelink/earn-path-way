@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowDownLeft, ArrowUpRight, CreditCard, Smartphone, Copy, Check, X, IndianRupee } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Smartphone, CreditCard, Copy, Check, X, IndianRupee, QrCode } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import BottomNav from "@/components/BottomNav";
@@ -12,18 +12,28 @@ import { toast } from "sonner";
 type FormMode = null | "deposit" | "withdraw";
 
 const WalletPage = () => {
-  const [copied, setCopied] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"all" | "deposit" | "withdraw" | "earning">("all");
   const [formMode, setFormMode] = useState<FormMode>(null);
   const [amount, setAmount] = useState("");
+  const [transactionId, setTransactionId] = useState("");
+  // Withdraw fields
   const [upiId, setUpiId] = useState("");
   const [accountHolder, setAccountHolder] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [ifsc, setIfsc] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"upi" | "bank">("upi");
+  const [copiedUpi, setCopiedUpi] = useState(false);
 
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
+
+  const { data: appSettings } = useQuery({
+    queryKey: ["app-settings"],
+    queryFn: async () => {
+      const { data } = await supabase.from("app_settings").select("*").eq("id", 1).single();
+      return data;
+    },
+  });
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["wallet-transactions"],
@@ -46,15 +56,9 @@ const WalletPage = () => {
       let description = "";
 
       if (formMode === "deposit") {
-        if (paymentMethod === "upi") {
-          if (!upiId.trim()) throw new Error("Enter UPI ID");
-          method = "UPI";
-          description = `Deposit via UPI: ${upiId.trim()}`;
-        } else {
-          if (!accountHolder.trim() || !accountNumber.trim() || !ifsc.trim()) throw new Error("Fill all bank details");
-          method = "Bank Transfer";
-          description = `Deposit via Bank: ${accountHolder.trim()} | A/C: ${accountNumber.trim()} | IFSC: ${ifsc.trim()}`;
-        }
+        if (!transactionId.trim()) throw new Error("Enter your UTR / Transaction ID");
+        method = "UPI";
+        description = `Deposit via UPI | UTR: ${transactionId.trim()}`;
       } else {
         if (paymentMethod === "upi") {
           if (!upiId.trim()) throw new Error("Enter UPI ID for withdrawal");
@@ -79,6 +83,7 @@ const WalletPage = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wallet-transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["recent-transactions"] });
       toast.success(`${formMode === "deposit" ? "Deposit" : "Withdrawal"} request submitted! Awaiting admin approval.`);
       resetForm();
     },
@@ -88,6 +93,7 @@ const WalletPage = () => {
   const resetForm = () => {
     setFormMode(null);
     setAmount("");
+    setTransactionId("");
     setUpiId("");
     setAccountHolder("");
     setAccountNumber("");
@@ -95,14 +101,20 @@ const WalletPage = () => {
     setPaymentMethod("upi");
   };
 
-  const handleCopy = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(id);
-    setTimeout(() => setCopied(null), 2000);
+  const handleCopyUpi = () => {
+    const adminUpi = (appSettings as any)?.admin_upi_id || "";
+    if (adminUpi) {
+      navigator.clipboard.writeText(adminUpi);
+      setCopiedUpi(true);
+      toast.success("UPI ID copied!");
+      setTimeout(() => setCopiedUpi(false), 2000);
+    }
   };
 
   const tabs = ["all", "deposit", "withdraw", "earning"] as const;
   const quickAmounts = [500, 1000, 2000, 5000];
+  const adminUpi = (appSettings as any)?.admin_upi_id || "Not set";
+  const adminQr = (appSettings as any)?.admin_qr_url || "";
 
   return (
     <div className="min-h-screen pb-24">
@@ -134,7 +146,7 @@ const WalletPage = () => {
 
         {/* Deposit / Withdraw Form */}
         <AnimatePresence>
-          {formMode && (
+          {formMode === "deposit" && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
@@ -143,22 +155,20 @@ const WalletPage = () => {
             >
               <div className="glass-card p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-semibold text-base">
-                    {formMode === "deposit" ? "💰 Deposit Request" : "💸 Withdrawal Request"}
-                  </h2>
+                  <h2 className="font-semibold text-base">💰 Deposit</h2>
                   <button onClick={resetForm} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
                     <X className="w-4 h-4 text-muted-foreground" />
                   </button>
                 </div>
 
-                {/* Amount Input */}
+                {/* Step 1: Amount */}
                 <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground font-medium">Amount (₹)</label>
+                  <label className="text-sm text-muted-foreground font-medium">1. Enter Amount (₹)</label>
                   <div className="relative">
                     <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       type="number"
-                      placeholder="Enter amount (min ₹100)"
+                      placeholder="Min ₹100"
                       value={amount}
                       onChange={e => setAmount(e.target.value)}
                       className="pl-9 h-12 bg-muted/50 border-border/60"
@@ -173,7 +183,7 @@ const WalletPage = () => {
                         className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                           amount === qa.toString()
                             ? "gradient-primary text-primary-foreground"
-                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                            : "bg-muted text-muted-foreground"
                         }`}
                       >
                         ₹{qa.toLocaleString("en-IN")}
@@ -182,9 +192,106 @@ const WalletPage = () => {
                   </div>
                 </div>
 
-                {/* Payment Method Toggle */}
+                {/* Step 2: Pay to admin UPI */}
+                <div className="space-y-3">
+                  <label className="text-sm text-muted-foreground font-medium">2. Send payment to this UPI</label>
+                  <div className="bg-muted rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground">UPI ID</p>
+                        <p className="text-sm font-bold">{adminUpi}</p>
+                      </div>
+                      <button onClick={handleCopyUpi} className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium flex items-center gap-1">
+                        {copiedUpi ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        {copiedUpi ? "Copied" : "Copy"}
+                      </button>
+                    </div>
+                    {adminQr && (
+                      <div className="flex flex-col items-center gap-2 pt-2 border-t border-border/50">
+                        <QrCode className="w-5 h-5 text-muted-foreground" />
+                        <img src={adminQr} alt="QR Code" className="w-40 h-40 rounded-lg border border-border/50 object-contain bg-white" />
+                        <p className="text-xs text-muted-foreground">Scan to pay</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Step 3: Enter Transaction ID */}
                 <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground font-medium">Payment Method</label>
+                  <label className="text-sm text-muted-foreground font-medium">3. Enter UTR / Transaction ID</label>
+                  <Input
+                    placeholder="e.g. 412345678901"
+                    value={transactionId}
+                    onChange={e => setTransactionId(e.target.value)}
+                    className="h-12 bg-muted/50 border-border/60"
+                  />
+                  <p className="text-xs text-muted-foreground">You'll find this in your UPI app payment history</p>
+                </div>
+
+                <Button
+                  onClick={() => submitMutation.mutate()}
+                  disabled={submitMutation.isPending}
+                  className="w-full h-12 gradient-primary text-primary-foreground font-semibold text-base shadow-md shadow-primary/20"
+                >
+                  {submitMutation.isPending ? "Submitting..." : "Submit Deposit Request"}
+                </Button>
+
+                <p className="text-xs text-muted-foreground text-center">
+                  Your deposit will be verified & credited within minutes.
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+          {formMode === "withdraw" && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="glass-card p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-semibold text-base">💸 Withdrawal</h2>
+                  <button onClick={resetForm} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
+
+                {/* Amount */}
+                <div className="space-y-2">
+                  <label className="text-sm text-muted-foreground font-medium">Amount (₹)</label>
+                  <div className="relative">
+                    <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      placeholder="Min ₹100"
+                      value={amount}
+                      onChange={e => setAmount(e.target.value)}
+                      className="pl-9 h-12 bg-muted/50 border-border/60"
+                      min={100}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    {quickAmounts.map(qa => (
+                      <button
+                        key={qa}
+                        onClick={() => setAmount(qa.toString())}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          amount === qa.toString()
+                            ? "gradient-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        ₹{qa.toLocaleString("en-IN")}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Payment Method */}
+                <div className="space-y-2">
+                  <label className="text-sm text-muted-foreground font-medium">Withdraw To</label>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setPaymentMethod("upi")}
@@ -205,46 +312,24 @@ const WalletPage = () => {
                   </div>
                 </div>
 
-                {/* Payment Details */}
                 {paymentMethod === "upi" ? (
                   <div className="space-y-2">
-                    <label className="text-sm text-muted-foreground font-medium">UPI ID</label>
-                    <Input
-                      placeholder="yourname@upi"
-                      value={upiId}
-                      onChange={e => setUpiId(e.target.value)}
-                      className="h-12 bg-muted/50 border-border/60"
-                    />
+                    <label className="text-sm text-muted-foreground font-medium">Your UPI ID</label>
+                    <Input placeholder="yourname@upi" value={upiId} onChange={e => setUpiId(e.target.value)} className="h-12 bg-muted/50 border-border/60" />
                   </div>
                 ) : (
                   <div className="space-y-3">
                     <div className="space-y-2">
                       <label className="text-sm text-muted-foreground font-medium">Account Holder Name</label>
-                      <Input
-                        placeholder="Full name"
-                        value={accountHolder}
-                        onChange={e => setAccountHolder(e.target.value)}
-                        className="h-12 bg-muted/50 border-border/60"
-                      />
+                      <Input placeholder="Full name" value={accountHolder} onChange={e => setAccountHolder(e.target.value)} className="h-12 bg-muted/50 border-border/60" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm text-muted-foreground font-medium">Account Number</label>
-                      <Input
-                        placeholder="Account number"
-                        value={accountNumber}
-                        onChange={e => setAccountNumber(e.target.value)}
-                        className="h-12 bg-muted/50 border-border/60"
-                      />
+                      <Input placeholder="Account number" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} className="h-12 bg-muted/50 border-border/60" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm text-muted-foreground font-medium">IFSC Code</label>
-                      <Input
-                        placeholder="IFSC code"
-                        value={ifsc}
-                        onChange={e => setIfsc(e.target.value)}
-                        className="h-12 bg-muted/50 border-border/60"
-                        maxLength={11}
-                      />
+                      <Input placeholder="IFSC code" value={ifsc} onChange={e => setIfsc(e.target.value)} className="h-12 bg-muted/50 border-border/60" maxLength={11} />
                     </div>
                   </div>
                 )}
@@ -254,15 +339,11 @@ const WalletPage = () => {
                   disabled={submitMutation.isPending}
                   className="w-full h-12 gradient-primary text-primary-foreground font-semibold text-base shadow-md shadow-primary/20"
                 >
-                  {submitMutation.isPending
-                    ? "Submitting..."
-                    : `Submit ${formMode === "deposit" ? "Deposit" : "Withdrawal"} Request`}
+                  {submitMutation.isPending ? "Submitting..." : "Submit Withdrawal Request"}
                 </Button>
 
                 <p className="text-xs text-muted-foreground text-center">
-                  {formMode === "deposit"
-                    ? "Your deposit will be credited after admin verification."
-                    : "Withdrawals are processed within 24-48 hours."}
+                  Withdrawals are processed within 24-48 hours.
                 </p>
               </div>
             </motion.div>
