@@ -1,15 +1,17 @@
-import { motion } from "framer-motion";
-import { ArrowDownLeft, ArrowUpRight, Wallet, Bell, Eye, EyeOff, Shield } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowDownLeft, ArrowUpRight, Wallet, Bell, Eye, EyeOff, Shield, X, CheckCircle, XCircle, Clock } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const [showBalance, setShowBalance] = useState(true);
+  const [showNotifications, setShowNotifications] = useState(false);
   const { profile, isAdmin } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["recent-transactions"],
@@ -34,6 +36,36 @@ const Dashboard = () => {
     },
   });
 
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("notifications")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      return data || [];
+    },
+  });
+
+  const unreadCount = notifications.filter((n: any) => !n.is_read).length;
+
+  const markReadMutation = useMutation({
+    mutationFn: async () => {
+      const unreadIds = notifications.filter((n: any) => !n.is_read).map((n: any) => n.id);
+      if (unreadIds.length === 0) return;
+      await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+
+  const handleOpenNotifications = () => {
+    setShowNotifications(!showNotifications);
+    if (!showNotifications && unreadCount > 0) {
+      markReadMutation.mutate();
+    }
+  };
+
   const quickActions = [
     { icon: ArrowDownLeft, label: "Deposit", color: "text-success", to: "/wallet" },
     { icon: ArrowUpRight, label: "Withdraw", color: "text-warning", to: "/wallet" },
@@ -52,11 +84,68 @@ const Dashboard = () => {
               <Shield className="w-5 h-5 text-primary" />
             </Link>
           )}
-          <button className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center relative">
+          <button
+            onClick={handleOpenNotifications}
+            className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center relative"
+          >
             <Bell className="w-5 h-5 text-muted-foreground" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
+
+      {/* Notifications Panel */}
+      <AnimatePresence>
+        {showNotifications && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="px-5 mb-4"
+          >
+            <div className="glass-card p-4 max-h-80 overflow-y-auto">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-sm">Notifications</h3>
+                <button onClick={() => setShowNotifications(false)}>
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
+              {notifications.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">No notifications yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {notifications.map((n: any) => (
+                    <div key={n.id} className={`p-3 rounded-lg ${n.is_read ? "bg-muted/50" : "bg-primary/5 border border-primary/10"}`}>
+                      <div className="flex items-start gap-2">
+                        <div className="mt-0.5">
+                          {n.title.includes("Approved") ? (
+                            <CheckCircle className="w-4 h-4 text-success" />
+                          ) : n.title.includes("Rejected") ? (
+                            <XCircle className="w-4 h-4 text-destructive" />
+                          ) : (
+                            <Clock className="w-4 h-4 text-info" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold">{n.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{n.message}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {new Date(n.created_at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="px-5 space-y-5">
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="gradient-primary rounded-2xl p-5 shadow-xl shadow-primary/10">
@@ -121,7 +210,9 @@ const Dashboard = () => {
                   <p className={`text-sm font-semibold ${tx.type === "withdraw" ? "text-warning" : "text-success"}`}>
                     {tx.type === "withdraw" ? "-" : "+"}₹{Number(tx.amount).toLocaleString("en-IN")}
                   </p>
-                  <p className="text-xs text-muted-foreground capitalize">{tx.status}</p>
+                  <p className={`text-xs capitalize ${
+                    tx.status === "completed" ? "text-success" : tx.status === "rejected" ? "text-destructive" : "text-muted-foreground"
+                  }`}>{tx.status}</p>
                 </div>
               </motion.div>
             ))}

@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       app_settings: {
         Row: {
+          admin_qr_url: string | null
+          admin_upi_id: string | null
           id: number
           referral_level1_rate: number | null
           referral_level2_rate: number | null
@@ -24,6 +26,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_qr_url?: string | null
+          admin_upi_id?: string | null
           id: number
           referral_level1_rate?: number | null
           referral_level2_rate?: number | null
@@ -32,6 +36,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_qr_url?: string | null
+          admin_upi_id?: string | null
           id?: number
           referral_level1_rate?: number | null
           referral_level2_rate?: number | null
@@ -69,6 +75,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       offers: {
         Row: {

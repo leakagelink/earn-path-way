@@ -1,15 +1,17 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, ArrowDownLeft, ArrowUpRight, CheckCircle, XCircle, Clock } from "lucide-react";
+import { ArrowLeft, ArrowDownLeft, ArrowUpRight, CheckCircle, XCircle } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const AdminTransactions = () => {
   const [filter, setFilter] = useState<"pending" | "completed" | "rejected" | "all">("pending");
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["admin-transactions"],
@@ -22,7 +24,6 @@ const AdminTransactions = () => {
     },
   });
 
-  // Fetch user profiles for display
   const { data: profiles = [] } = useQuery({
     queryKey: ["admin-profiles"],
     queryFn: async () => {
@@ -37,30 +38,40 @@ const AdminTransactions = () => {
       const { error } = await supabase.from("transactions").update({ status }).eq("id", id);
       if (error) throw error;
 
-      // If approving a deposit, add to user balance
-      if (status === "completed" && type === "deposit") {
+      // Update balance on approval
+      if (status === "completed") {
         const profile = profiles.find(p => p.user_id === userId);
         if (profile) {
+          let newBalance = Number(profile.balance);
+          if (type === "deposit") {
+            newBalance += amount;
+          } else if (type === "withdraw") {
+            if (newBalance < amount) throw new Error("User has insufficient balance");
+            newBalance -= amount;
+          }
           const { error: balErr } = await supabase
             .from("profiles")
-            .update({ balance: Number(profile.balance) + amount })
+            .update({ balance: newBalance })
             .eq("user_id", userId);
           if (balErr) throw balErr;
         }
       }
 
-      // If approving a withdrawal, deduct from user balance
-      if (status === "completed" && type === "withdraw") {
-        const profile = profiles.find(p => p.user_id === userId);
-        if (profile) {
-          if (Number(profile.balance) < amount) throw new Error("User has insufficient balance");
-          const { error: balErr } = await supabase
-            .from("profiles")
-            .update({ balance: Number(profile.balance) - amount })
-            .eq("user_id", userId);
-          if (balErr) throw balErr;
-        }
-      }
+      // Create notification for user
+      const actionLabel = status === "completed" ? "approved" : "rejected";
+      const typeLabel = type === "deposit" ? "Deposit" : type === "withdraw" ? "Withdrawal" : type;
+      const title = status === "completed"
+        ? `${typeLabel} Approved ✅`
+        : `${typeLabel} Rejected ❌`;
+      const message = status === "completed"
+        ? `Your ${typeLabel.toLowerCase()} of ₹${amount.toLocaleString("en-IN")} has been approved${type === "deposit" ? " and credited to your wallet" : " and will be processed shortly"}.`
+        : `Your ${typeLabel.toLowerCase()} of ₹${amount.toLocaleString("en-IN")} has been rejected. Please contact support for more details.`;
+
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        title,
+        message,
+      });
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["admin-transactions"] });
@@ -74,7 +85,6 @@ const AdminTransactions = () => {
   const filtered = filter === "all" ? transactions : transactions.filter(t => t.status === filter);
   const getProfile = (userId: string) => profiles.find(p => p.user_id === userId);
   const tabs = ["pending", "completed", "rejected", "all"] as const;
-
   const pendingCount = transactions.filter(t => t.status === "pending").length;
 
   return (
@@ -90,7 +100,6 @@ const AdminTransactions = () => {
       </div>
 
       <div className="px-5 space-y-4">
-        {/* Filter Tabs */}
         <div className="flex gap-2 overflow-x-auto">
           {tabs.map(tab => (
             <button
@@ -105,7 +114,6 @@ const AdminTransactions = () => {
           ))}
         </div>
 
-        {/* Transaction List */}
         <div className="space-y-3">
           {isLoading && <p className="text-sm text-muted-foreground text-center py-8">Loading...</p>}
           {!isLoading && filtered.length === 0 && (
@@ -151,7 +159,6 @@ const AdminTransactions = () => {
                   </div>
                 </div>
 
-                {/* Details */}
                 {tx.description && (
                   <p className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">{tx.description}</p>
                 )}
@@ -161,18 +168,11 @@ const AdminTransactions = () => {
                   <span>{new Date(tx.created_at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
                 </div>
 
-                {/* Action Buttons */}
                 {isPending && (
                   <div className="flex gap-2 pt-1">
                     <Button
                       size="sm"
-                      onClick={() => updateMutation.mutate({
-                        id: tx.id,
-                        status: "completed",
-                        userId: tx.user_id,
-                        amount: Number(tx.amount),
-                        type: tx.type,
-                      })}
+                      onClick={() => updateMutation.mutate({ id: tx.id, status: "completed", userId: tx.user_id, amount: Number(tx.amount), type: tx.type })}
                       disabled={updateMutation.isPending}
                       className="flex-1 h-9 gradient-primary text-primary-foreground font-semibold gap-1.5"
                     >
@@ -181,13 +181,7 @@ const AdminTransactions = () => {
                     <Button
                       size="sm"
                       variant="destructive"
-                      onClick={() => updateMutation.mutate({
-                        id: tx.id,
-                        status: "rejected",
-                        userId: tx.user_id,
-                        amount: Number(tx.amount),
-                        type: tx.type,
-                      })}
+                      onClick={() => updateMutation.mutate({ id: tx.id, status: "rejected", userId: tx.user_id, amount: Number(tx.amount), type: tx.type })}
                       disabled={updateMutation.isPending}
                       className="flex-1 h-9 font-semibold gap-1.5"
                     >
