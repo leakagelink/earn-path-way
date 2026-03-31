@@ -1,28 +1,43 @@
 import { motion } from "framer-motion";
-import { Gift, Check, Clock } from "lucide-react";
-import { useState } from "react";
+import { Gift, Check } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-
-interface Offer {
-  id: number;
-  amount: number;
-  income: number;
-  code: string;
-  claimed: boolean;
-}
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const Offers = () => {
-  const [offers, setOffers] = useState<Offer[]>([
-    { id: 1, amount: 400, income: 16, code: "GW-8F3K2", claimed: false },
-    { id: 2, amount: 800, income: 32, code: "GW-9A1L7", claimed: true },
-    { id: 3, amount: 1200, income: 48, code: "GW-4D6M9", claimed: false },
-    { id: 4, amount: 2000, income: 80, code: "GW-7B2N5", claimed: false },
-  ]);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const handleClaim = (id: number) => {
-    setOffers(prev => prev.map(o => o.id === id ? { ...o, claimed: true } : o));
-  };
+  const { data: offers = [] } = useQuery({
+    queryKey: ["offers"],
+    queryFn: async () => {
+      const { data } = await supabase.from("offers").select("*").eq("is_active", true).order("amount");
+      return data || [];
+    },
+  });
+
+  const { data: claimedIds = [] } = useQuery({
+    queryKey: ["claimed-offers"],
+    queryFn: async () => {
+      const { data } = await supabase.from("claimed_offers").select("offer_id");
+      return (data || []).map(c => c.offer_id);
+    },
+  });
+
+  const claimMutation = useMutation({
+    mutationFn: async (offerId: string) => {
+      const { error } = await supabase.from("claimed_offers").insert({ offer_id: offerId, user_id: user!.id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["claimed-offers"] });
+      toast.success("Offer claimed successfully!");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   return (
     <div className="min-h-screen pb-24">
@@ -32,47 +47,40 @@ const Offers = () => {
       </div>
 
       <div className="px-5 space-y-3">
-        {offers.map((offer, i) => (
-          <motion.div
-            key={offer.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }}
-            className="glass-card p-4"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
-                  offer.claimed ? "bg-muted" : "gradient-primary shadow-md shadow-primary/20"
-                }`}>
-                  <Gift className={`w-5 h-5 ${offer.claimed ? "text-muted-foreground" : "text-primary-foreground"}`} />
+        {offers.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">No offers available</p>}
+        {offers.map((offer, i) => {
+          const claimed = claimedIds.includes(offer.id);
+          return (
+            <motion.div key={offer.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }} className="glass-card p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${claimed ? "bg-muted" : "gradient-primary shadow-md shadow-primary/20"}`}>
+                    <Gift className={`w-5 h-5 ${claimed ? "text-muted-foreground" : "text-primary-foreground"}`} />
+                  </div>
+                  <div>
+                    <p className="font-semibold">₹{Number(offer.amount).toLocaleString("en-IN")}</p>
+                    <p className="text-xs text-muted-foreground">Code: {offer.code}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-semibold">₹{offer.amount.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">Code: {offer.code}</p>
+                <div className="text-right">
+                  <span className="text-success font-bold text-sm">+₹{Number(offer.income)}</span>
+                  <p className="text-xs text-muted-foreground">income</p>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="text-success font-bold text-sm">+₹{offer.income}</span>
-                <p className="text-xs text-muted-foreground">income</p>
+              <div className="mt-3">
+                {claimed ? (
+                  <div className="flex items-center justify-center gap-2 py-2 rounded-lg bg-muted text-muted-foreground text-sm">
+                    <Check className="w-4 h-4" /> Claimed
+                  </div>
+                ) : (
+                  <Button onClick={() => claimMutation.mutate(offer.id)} disabled={claimMutation.isPending} className="w-full gradient-primary text-primary-foreground font-semibold shadow-md shadow-primary/20">
+                    Claim Offer
+                  </Button>
+                )}
               </div>
-            </div>
-            <div className="mt-3">
-              {offer.claimed ? (
-                <div className="flex items-center justify-center gap-2 py-2 rounded-lg bg-muted text-muted-foreground text-sm">
-                  <Check className="w-4 h-4" /> Claimed
-                </div>
-              ) : (
-                <Button
-                  onClick={() => handleClaim(offer.id)}
-                  className="w-full gradient-primary text-primary-foreground font-semibold shadow-md shadow-primary/20"
-                >
-                  Claim Offer
-                </Button>
-              )}
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
       </div>
 
       <BottomNav />
