@@ -125,7 +125,7 @@ const WalletPage = () => {
   return (
     <div className="min-h-screen pb-24">
       <div className="px-5 pt-12 pb-4">
-        <h1 className="text-xl font-bold">Wallet</h1>
+        <h1 className="text-xl font-bold">Payment</h1>
       </div>
 
       <div className="px-5 space-y-5">
