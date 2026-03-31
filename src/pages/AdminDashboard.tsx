@@ -30,7 +30,7 @@ const AdminDashboard = () => {
   const adminMenu = [
     { label: "Manage Offers", icon: Gift, to: "/admin/offers", desc: "Create, edit, delete offers" },
     { label: "User Management", icon: Users, to: "#", desc: "View users, edit balances" },
-    { label: "Transactions", icon: ArrowUpRight, to: "#", desc: "Approve/reject withdrawals" },
+    { label: "Transactions", icon: ArrowUpRight, to: "/admin/transactions", desc: "Approve/reject withdrawals" },
     { label: "Support Tickets", icon: MessageSquare, to: "#", desc: "Reply to user tickets" },
     { label: "Settings", icon: SettingsIcon, to: "#", desc: "Telegram link, referral rates" },
   ];
