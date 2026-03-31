@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowDownLeft, ArrowUpRight, Wallet, Bell, Eye, EyeOff } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Wallet, Bell, Eye, EyeOff, Shield } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const [showBalance, setShowBalance] = useState(true);
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["recent-transactions"],
@@ -46,9 +46,16 @@ const Dashboard = () => {
           <p className="text-muted-foreground text-sm">Welcome back</p>
           <h1 className="text-xl font-bold">{profile?.full_name || "User"}</h1>
         </div>
-        <button className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center relative">
-          <Bell className="w-5 h-5 text-muted-foreground" />
-        </button>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Link to="/admin" className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Shield className="w-5 h-5 text-primary" />
+            </Link>
+          )}
+          <button className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center relative">
+            <Bell className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </div>
       </div>
 
       <div className="px-5 space-y-5">
