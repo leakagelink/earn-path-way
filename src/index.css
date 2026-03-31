@@ -6,48 +6,48 @@
 
 @layer base {
   :root {
-    --background: 215 25% 8%;
-    --foreground: 210 20% 95%;
+    --background: 210 30% 97%;
+    --foreground: 215 25% 15%;
 
-    --card: 215 22% 12%;
-    --card-foreground: 210 20% 95%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
 
-    --popover: 215 22% 12%;
-    --popover-foreground: 210 20% 95%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
 
-    --primary: 145 65% 42%;
+    --primary: 145 65% 38%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 20% 16%;
-    --secondary-foreground: 210 20% 85%;
+    --secondary: 210 25% 93%;
+    --secondary-foreground: 215 20% 30%;
 
-    --muted: 215 18% 15%;
-    --muted-foreground: 215 15% 55%;
+    --muted: 210 20% 94%;
+    --muted-foreground: 215 15% 50%;
 
-    --accent: 210 75% 52%;
+    --accent: 210 75% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 55%;
-    --destructive-foreground: 210 20% 95%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 215 18% 20%;
-    --input: 215 18% 20%;
-    --ring: 145 65% 42%;
+    --border: 210 20% 88%;
+    --input: 210 20% 88%;
+    --ring: 145 65% 38%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 215 22% 10%;
-    --sidebar-foreground: 210 20% 85%;
-    --sidebar-primary: 145 65% 42%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 20% 30%;
+    --sidebar-primary: 145 65% 38%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 18% 15%;
-    --sidebar-accent-foreground: 210 20% 85%;
-    --sidebar-border: 215 18% 20%;
-    --sidebar-ring: 145 65% 42%;
+    --sidebar-accent: 210 25% 95%;
+    --sidebar-accent-foreground: 215 20% 30%;
+    --sidebar-border: 210 20% 88%;
+    --sidebar-ring: 145 65% 38%;
 
-    --success: 145 65% 42%;
-    --warning: 42 92% 52%;
-    --info: 210 75% 52%;
+    --success: 145 65% 38%;
+    --warning: 42 92% 50%;
+    --info: 210 75% 50%;
 
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   }
@@ -65,19 +65,19 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-xl;
+    @apply bg-card border border-border/60 rounded-xl shadow-sm;
   }
   .gradient-primary {
-    background: linear-gradient(135deg, hsl(145, 65%, 42%), hsl(210, 75%, 52%));
+    background: linear-gradient(135deg, hsl(145, 65%, 38%), hsl(210, 75%, 50%));
   }
   .gradient-card {
-    background: linear-gradient(145deg, hsl(215, 22%, 14%), hsl(215, 22%, 10%));
+    background: linear-gradient(145deg, hsl(0, 0%, 100%), hsl(210, 25%, 97%));
   }
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(145, 65%, 48%), hsl(210, 75%, 55%));
+    background-image: linear-gradient(135deg, hsl(145, 65%, 35%), hsl(210, 75%, 48%));
   }
   .gradient-gold {
-    background: linear-gradient(135deg, hsl(42, 92%, 52%), hsl(38, 90%, 45%));
+    background: linear-gradient(135deg, hsl(42, 92%, 50%), hsl(38, 90%, 42%));
   }
 }
