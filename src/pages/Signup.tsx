@@ -55,8 +55,6 @@ const Signup = () => {
           <h1 className="text-2xl font-bold">Create Account</h1>
           <p className="text-muted-foreground text-sm">Start your earning journey</p>
         </div>
-          <p className="text-muted-foreground text-sm">Start your earning journey</p>
-        </div>
 
         <form onSubmit={handleSignup} className="space-y-4">
           <div className="space-y-2">

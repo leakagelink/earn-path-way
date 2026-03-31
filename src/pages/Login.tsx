@@ -39,8 +39,6 @@ const Login = () => {
           <h1 className="text-2xl font-bold">Good Wallet</h1>
           <p className="text-muted-foreground text-sm">Your Path to Earning</p>
         </div>
-          <p className="text-muted-foreground text-sm">Your Path to Earning</p>
-        </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-2">
