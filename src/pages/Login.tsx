@@ -1,14 +1,30 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Wallet } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      navigate("/dashboard");
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
@@ -25,7 +41,7 @@ const Login = () => {
           <p className="text-muted-foreground text-sm">Your Path to Earning</p>
         </div>
 
-        <div className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm text-muted-foreground">Email</label>
             <Input
@@ -34,6 +50,7 @@ const Login = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="bg-secondary border-border/50 h-12"
+              required
             />
           </div>
           <div className="space-y-2">
@@ -45,6 +62,7 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-secondary border-border/50 h-12 pr-12"
+                required
               />
               <button
                 type="button"
@@ -56,16 +74,10 @@ const Login = () => {
             </div>
           </div>
 
-          <div className="text-right">
-            <Link to="/forgot-password" className="text-sm text-primary hover:underline">
-              Forgot Password?
-            </Link>
-          </div>
-
-          <Button className="w-full h-12 gradient-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20">
-            Sign In
+          <Button type="submit" disabled={loading} className="w-full h-12 gradient-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20">
+            {loading ? "Signing in..." : "Sign In"}
           </Button>
-        </div>
+        </form>
 
         <p className="text-center text-sm text-muted-foreground">
           Don't have an account?{" "}
