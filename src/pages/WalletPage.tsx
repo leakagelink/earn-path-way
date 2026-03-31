@@ -93,12 +93,28 @@ const WalletPage = () => {
         method = "UPI";
         description = `Deposit via UPI | UTR: ${transactionId.trim()}`;
       } else {
-        if (paymentMethod === "upi") {
-          if (!upiId.trim()) throw new Error("Enter UPI ID for withdrawal");
+        // Check if a saved method is selected
+        if (selectedMethodId) {
+          const saved = savedMethods.find(m => m.id === selectedMethodId);
+          if (!saved) throw new Error("Selected payment method not found");
+          if (saved.type === "UPI") {
+            method = "UPI";
+            description = `Withdraw to UPI: ${saved.details}`;
+          } else {
+            method = "Bank Transfer";
+            try {
+              const d = JSON.parse(saved.details);
+              description = `Withdraw to Bank: ${d.holder} | A/C: ${d.account} | IFSC: ${d.ifsc}`;
+            } catch {
+              description = `Withdraw to Bank: ${saved.details}`;
+            }
+          }
+        } else if (paymentMethod === "upi") {
+          if (!upiId.trim()) throw new Error("Enter UPI ID or select a saved method");
           method = "UPI";
           description = `Withdraw to UPI: ${upiId.trim()}`;
         } else {
-          if (!accountHolder.trim() || !accountNumber.trim() || !ifsc.trim()) throw new Error("Fill all bank details");
+          if (!accountHolder.trim() || !accountNumber.trim() || !ifsc.trim()) throw new Error("Fill all bank details or select a saved method");
           method = "Bank Transfer";
           description = `Withdraw to Bank: ${accountHolder.trim()} | A/C: ${accountNumber.trim()} | IFSC: ${ifsc.trim()}`;
         }
