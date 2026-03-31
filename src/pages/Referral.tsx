@@ -57,7 +57,7 @@ const Referral = () => {
   const totalEarned = commissions.filter(c => c.status === "completed").reduce((s, t) => s + Number(t.amount), 0);
   const pendingEarnings = commissions.filter(c => c.status === "pending").reduce((s, t) => s + Number(t.amount), 0);
   const referralCode = profile?.referral_code || "";
-  const referralLink = referralCode ? `${window.location.origin}/signup?ref=${referralCode}` : "";
+  const referralLink = referralCode ? `https://goodwallet.online/signup?ref=${referralCode}` : "";
 
   const l1Rate = appSettings?.referral_level1_rate ?? 5;
   const l2Rate = appSettings?.referral_level2_rate ?? 3;
