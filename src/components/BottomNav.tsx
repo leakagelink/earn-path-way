@@ -3,7 +3,7 @@ import { LayoutDashboard, Wallet, Gift, BarChart3, Settings } from "lucide-react
 
 const tabs = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Home" },
-  { to: "/wallet", icon: Wallet, label: "Wallet" },
+  { to: "/wallet", icon: Wallet, label: "Payment" },
   { to: "/offers", icon: Gift, label: "Offers" },
   { to: "/stats", icon: BarChart3, label: "Stats" },
   { to: "/settings", icon: Settings, label: "More" },
