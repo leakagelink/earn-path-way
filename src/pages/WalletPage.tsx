@@ -3,6 +3,7 @@ import { ArrowDownLeft, ArrowUpRight, Smartphone, CreditCard, Copy, Check, X, In
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import BottomNav from "@/components/BottomNav";
+import SavedPaymentMethods from "@/components/wallet/SavedPaymentMethods";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ const WalletPage = () => {
   const [amount, setAmount] = useState("");
   const [transactionId, setTransactionId] = useState("");
   // Withdraw fields
+  const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
   const [upiId, setUpiId] = useState("");
   const [accountHolder, setAccountHolder] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
