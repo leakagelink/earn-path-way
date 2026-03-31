@@ -35,7 +35,7 @@ const Login = () => {
         className="w-full max-w-sm space-y-8"
       >
         <div className="text-center space-y-3">
-          <img src={logo} alt="Good Wallet" className="w-20 h-20 rounded-2xl mx-auto shadow-lg shadow-primary/20 object-cover bg-white p-1" />
+          <img src={logo} alt="Good Wallet" className="w-20 h-20 rounded-2xl mx-auto shadow-lg shadow-primary/20 object-cover bg-black p-1" />
           <h1 className="text-2xl font-bold">Good Wallet</h1>
           <p className="text-muted-foreground text-sm">Your Path to Earning</p>
         </div>
