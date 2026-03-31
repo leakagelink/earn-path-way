@@ -43,7 +43,7 @@ const SavedPaymentMethods = () => {
       } else {
         if (!accountHolder.trim() || !accountNumber.trim() || !ifsc.trim())
           throw new Error("सभी bank details भरें");
-        type = "Bank";
+        type = "bank";
         details = JSON.stringify({
           holder: accountHolder.trim(),
           account: accountNumber.trim(),
