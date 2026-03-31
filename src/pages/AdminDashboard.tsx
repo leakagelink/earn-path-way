@@ -31,7 +31,7 @@ const AdminDashboard = () => {
     { label: "Manage Offers", icon: Gift, to: "/admin/offers", desc: "Create, edit, delete offers" },
     { label: "User Management", icon: Users, to: "#", desc: "View users, edit balances" },
     { label: "Transactions", icon: ArrowUpRight, to: "/admin/transactions", desc: "Approve/reject withdrawals" },
-    { label: "Support Tickets", icon: MessageSquare, to: "#", desc: "Reply to user tickets" },
+    { label: "Support Tickets", icon: MessageSquare, to: "/admin/support", desc: "Reply to user tickets" },
     { label: "Settings", icon: SettingsIcon, to: "/admin/settings", desc: "UPI, Telegram, referral rates" },
   ];
 
