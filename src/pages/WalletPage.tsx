@@ -45,6 +45,22 @@ const WalletPage = () => {
 
   const filtered = activeTab === "all" ? transactions : transactions.filter(t => t.type === activeTab);
 
+  // Calculate cashback stats
+  const cashbackStats = useMemo(() => {
+    const earnedRewards = transactions
+      .filter(t => t.type === "earning" && t.method === "Cashback" && t.status === "completed")
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    // Pending deposits × 5% = pending rewards
+    const pendingRewards = transactions
+      .filter(t => t.type === "deposit" && t.status === "pending")
+      .reduce((sum, t) => sum + Number(t.amount) * 0.05, 0);
+
+    const pendingRounded = Math.round(pendingRewards * 100) / 100;
+
+    return { earnedRewards, pendingRewards: pendingRounded };
+  }, [transactions]);
+
   const submitMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Not logged in");
