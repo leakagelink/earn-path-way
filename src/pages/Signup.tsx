@@ -51,10 +51,10 @@ const Signup = () => {
         className="w-full max-w-sm space-y-8"
       >
         <div className="text-center space-y-3">
-          <div className="w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-primary/20">
-            <Wallet className="w-8 h-8 text-primary-foreground" />
-          </div>
+          <img src={logo} alt="Good Wallet" className="w-20 h-20 rounded-2xl mx-auto shadow-lg shadow-primary/20 object-cover" />
           <h1 className="text-2xl font-bold">Create Account</h1>
+          <p className="text-muted-foreground text-sm">Start your earning journey</p>
+        </div>
           <p className="text-muted-foreground text-sm">Start your earning journey</p>
         </div>
 
