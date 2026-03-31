@@ -66,18 +66,9 @@ const Dashboard = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
   });
 
-  const claimMutation = useMutation({
-    mutationFn: async (offerId: string) => {
-      const { error } = await supabase.from("claimed_offers").insert({ offer_id: offerId, user_id: user!.id });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["claimed-offers"] });
-      toast.success("Offer claimed! Now deposit to activate.");
-      navigate("/wallet");
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
+  const handleClaimOffer = (offer: any) => {
+    navigate("/wallet");
+  };
 
   const handleOpenNotifications = () => {
     setShowNotifications(!showNotifications);
