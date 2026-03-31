@@ -391,49 +391,99 @@ const WalletPage = () => {
                   </div>
                 </div>
 
-                {/* Payment Method */}
-                <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground font-medium">Withdraw To</label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setPaymentMethod("upi")}
-                      className={`flex-1 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-                        paymentMethod === "upi" ? "gradient-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      <Smartphone className="w-4 h-4" /> UPI
-                    </button>
-                    <button
-                      onClick={() => setPaymentMethod("bank")}
-                      className={`flex-1 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-                        paymentMethod === "bank" ? "gradient-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      <CreditCard className="w-4 h-4" /> Bank
-                    </button>
-                  </div>
-                </div>
-
-                {paymentMethod === "upi" ? (
+                {/* Saved Payment Methods Selection */}
+                {savedMethods.length > 0 && (
                   <div className="space-y-2">
-                    <label className="text-sm text-muted-foreground font-medium">Your UPI ID</label>
-                    <Input placeholder="yourname@upi" value={upiId} onChange={e => setUpiId(e.target.value)} className="h-12 bg-muted/50 border-border/60" />
+                    <label className="text-sm text-muted-foreground font-medium">Select Saved Method</label>
+                    <div className="space-y-2">
+                      {savedMethods.map(m => {
+                        const isSelected = selectedMethodId === m.id;
+                        const displayDetails = m.type === "UPI" ? m.details : (() => {
+                          try { const d = JSON.parse(m.details); return `A/C: ****${d.account.slice(-4)} | ${d.ifsc}`; } catch { return m.details; }
+                        })();
+                        return (
+                          <button
+                            key={m.id}
+                            onClick={() => { setSelectedMethodId(isSelected ? null : m.id); }}
+                            className={`w-full p-3 rounded-xl text-left flex items-center gap-3 transition-colors border ${
+                              isSelected
+                                ? "border-primary bg-primary/5"
+                                : "border-border/50 bg-muted/30"
+                            }`}
+                          >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              m.type === "UPI" ? "bg-info/10" : "bg-accent/10"
+                            }`}>
+                              {m.type === "UPI" ? <Smartphone className="w-3.5 h-3.5 text-info" /> : <CreditCard className="w-3.5 h-3.5 text-accent-foreground" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{m.label}</p>
+                              <p className="text-xs text-muted-foreground truncate">{displayDetails}</p>
+                            </div>
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                              isSelected ? "border-primary bg-primary" : "border-muted-foreground/30"
+                            }`}>
+                              {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <label className="text-sm text-muted-foreground font-medium">Account Holder Name</label>
-                      <Input placeholder="Full name" value={accountHolder} onChange={e => setAccountHolder(e.target.value)} className="h-12 bg-muted/50 border-border/60" />
+                )}
+
+                {/* Manual Entry (if no saved method selected) */}
+                {!selectedMethodId && (
+                  <>
+                    <div className="flex items-center gap-2 my-1">
+                      <div className="flex-1 h-px bg-border/50" />
+                      <span className="text-xs text-muted-foreground">{savedMethods.length > 0 ? "Or enter manually" : "Withdraw To"}</span>
+                      <div className="flex-1 h-px bg-border/50" />
                     </div>
+
                     <div className="space-y-2">
-                      <label className="text-sm text-muted-foreground font-medium">Account Number</label>
-                      <Input placeholder="Account number" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} className="h-12 bg-muted/50 border-border/60" />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setPaymentMethod("upi")}
+                          className={`flex-1 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                            paymentMethod === "upi" ? "gradient-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          <Smartphone className="w-4 h-4" /> UPI
+                        </button>
+                        <button
+                          onClick={() => setPaymentMethod("bank")}
+                          className={`flex-1 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                            paymentMethod === "bank" ? "gradient-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          <CreditCard className="w-4 h-4" /> Bank
+                        </button>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm text-muted-foreground font-medium">IFSC Code</label>
-                      <Input placeholder="IFSC code" value={ifsc} onChange={e => setIfsc(e.target.value)} className="h-12 bg-muted/50 border-border/60" maxLength={11} />
-                    </div>
-                  </div>
+
+                    {paymentMethod === "upi" ? (
+                      <div className="space-y-2">
+                        <label className="text-sm text-muted-foreground font-medium">Your UPI ID</label>
+                        <Input placeholder="yourname@upi" value={upiId} onChange={e => setUpiId(e.target.value)} className="h-12 bg-muted/50 border-border/60" maxLength={100} />
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <label className="text-sm text-muted-foreground font-medium">Account Holder Name</label>
+                          <Input placeholder="Full name" value={accountHolder} onChange={e => setAccountHolder(e.target.value)} className="h-12 bg-muted/50 border-border/60" maxLength={100} />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm text-muted-foreground font-medium">Account Number</label>
+                          <Input placeholder="Account number" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} className="h-12 bg-muted/50 border-border/60" maxLength={20} />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm text-muted-foreground font-medium">IFSC Code</label>
+                          <Input placeholder="IFSC code" value={ifsc} onChange={e => setIfsc(e.target.value)} className="h-12 bg-muted/50 border-border/60" maxLength={11} />
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <Button
