@@ -97,7 +97,7 @@ const WalletPage = () => {
         if (selectedMethodId) {
           const saved = savedMethods.find(m => m.id === selectedMethodId);
           if (!saved) throw new Error("Selected payment method not found");
-          if (saved.type === "UPI") {
+          if (saved.type === "upi") {
             method = "UPI";
             description = `Withdraw to UPI: ${saved.details}`;
           } else {
