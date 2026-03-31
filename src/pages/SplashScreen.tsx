@@ -44,7 +44,7 @@ const SplashScreen = () => {
         <motion.img
           src={logo}
           alt="Good Wallet"
-          className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-3xl shadow-2xl shadow-primary/20 object-contain"
+          className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-3xl shadow-2xl shadow-primary/20 object-contain bg-white p-2"
           animate={{ 
             boxShadow: [
               "0 25px 50px -12px hsla(var(--primary) / 0.2)",
