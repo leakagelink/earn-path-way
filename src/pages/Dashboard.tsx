@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const [showBalance, setShowBalance] = useState(true);
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["recent-transactions"],
