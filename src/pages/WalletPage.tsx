@@ -502,6 +502,9 @@ const WalletPage = () => {
           )}
         </AnimatePresence>
 
+        {/* Saved Payment Methods */}
+        <SavedPaymentMethods />
+
         {/* Transaction History */}
         <div>
           <h2 className="font-semibold mb-3">Transaction History</h2>
