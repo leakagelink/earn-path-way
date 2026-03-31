@@ -38,7 +38,7 @@ const SavedPaymentMethods = () => {
       let type = "";
       if (addType === "upi") {
         if (!upiId.trim()) throw new Error("UPI ID दर्ज करें");
-        type = "UPI";
+        type = "upi";
         details = upiId.trim();
       } else {
         if (!accountHolder.trim() || !accountNumber.trim() || !ifsc.trim())
