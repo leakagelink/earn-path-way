@@ -1,15 +1,13 @@
 import { motion } from "framer-motion";
 import { Gift, Check } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
 
 const Offers = () => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: offers = [] } = useQuery({
     queryKey: ["offers"],
@@ -25,18 +23,6 @@ const Offers = () => {
       const { data } = await supabase.from("claimed_offers").select("offer_id");
       return (data || []).map(c => c.offer_id);
     },
-  });
-
-  const claimMutation = useMutation({
-    mutationFn: async (offerId: string) => {
-      const { error } = await supabase.from("claimed_offers").insert({ offer_id: offerId, user_id: user!.id });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["claimed-offers"] });
-      toast.success("Offer claimed successfully!");
-    },
-    onError: (e: any) => toast.error(e.message),
   });
 
   return (
@@ -73,7 +59,7 @@ const Offers = () => {
                     <Check className="w-4 h-4" /> Claimed
                   </div>
                 ) : (
-                  <Button onClick={() => claimMutation.mutate(offer.id)} disabled={claimMutation.isPending} className="w-full gradient-primary text-primary-foreground font-semibold shadow-md shadow-primary/20">
+                  <Button onClick={() => navigate("/wallet")} className="w-full gradient-primary text-primary-foreground font-semibold shadow-md shadow-primary/20">
                     Claim Offer
                   </Button>
                 )}
