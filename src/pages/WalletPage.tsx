@@ -45,6 +45,15 @@ const WalletPage = () => {
     },
   });
 
+  const { data: savedMethods = [] } = useQuery({
+    queryKey: ["payment-methods"],
+    queryFn: async () => {
+      const { data } = await supabase.from("payment_methods").select("*").order("created_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
   const filtered = activeTab === "all" ? transactions : transactions.filter(t => t.type === activeTab);
 
   // Calculate cashback stats
