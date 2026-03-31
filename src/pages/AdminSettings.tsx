@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, Save } from "lucide-react";
-import { useState, useEffect } from "react";
+import { ArrowLeft, Save, Upload, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,12 +10,14 @@ import { toast } from "sonner";
 
 const AdminSettings = () => {
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [adminUpiId, setAdminUpiId] = useState("");
   const [adminQrUrl, setAdminQrUrl] = useState("");
   const [telegramLink, setTelegramLink] = useState("");
   const [l1Rate, setL1Rate] = useState("");
   const [l2Rate, setL2Rate] = useState("");
   const [l3Rate, setL3Rate] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const { data: settings } = useQuery({
     queryKey: ["admin-app-settings"],
@@ -35,6 +37,40 @@ const AdminSettings = () => {
       setL3Rate(String(settings.referral_level3_rate ?? 1));
     }
   }, [settings]);
+
+  const handleQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileName = `qr-${Date.now()}.${file.name.split(".").pop()}`;
+      const { error: uploadError } = await supabase.storage
+        .from("qr-codes")
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("qr-codes")
+        .getPublicUrl(fileName);
+
+      setAdminQrUrl(urlData.publicUrl);
+      toast.success("QR code uploaded!");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const removeQr = () => setAdminQrUrl("");
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -74,11 +110,39 @@ const AdminSettings = () => {
             <Input value={adminUpiId} onChange={e => setAdminUpiId(e.target.value)} placeholder="admin@upi" className="h-11 bg-muted/50" />
           </div>
           <div className="space-y-2">
-            <label className="text-sm text-muted-foreground font-medium">QR Code Image URL (optional)</label>
-            <Input value={adminQrUrl} onChange={e => setAdminQrUrl(e.target.value)} placeholder="https://..." className="h-11 bg-muted/50" />
-            {adminQrUrl && (
-              <img src={adminQrUrl} alt="QR Preview" className="w-32 h-32 rounded-lg border border-border/50 object-contain bg-white mx-auto" />
-            )}
+            <label className="text-sm text-muted-foreground font-medium">QR Code Image</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleQrUpload}
+              className="hidden"
+            />
+            {adminQrUrl ? (
+              <div className="relative w-40 mx-auto">
+                <img src={adminQrUrl} alt="QR Preview" className="w-40 h-40 rounded-lg border border-border/50 object-contain bg-white" />
+                <button
+                  onClick={removeQr}
+                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full gap-2"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="w-4 h-4" />
+              {uploading ? "Uploading..." : adminQrUrl ? "Change QR Code" : "Upload QR Code"}
+            </Button>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Or paste image URL</label>
+              <Input value={adminQrUrl} onChange={e => setAdminQrUrl(e.target.value)} placeholder="https://..." className="h-9 bg-muted/50 text-sm" />
+            </div>
           </div>
         </motion.div>
 
