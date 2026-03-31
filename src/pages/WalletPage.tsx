@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowDownLeft, ArrowUpRight, Smartphone, CreditCard, Copy, Check, X, IndianRupee, QrCode } from "lucide-react";
-import { useState } from "react";
+import { ArrowDownLeft, ArrowUpRight, Smartphone, CreditCard, Copy, Check, X, IndianRupee, QrCode, Gift, Clock, BadgePercent } from "lucide-react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,6 +44,22 @@ const WalletPage = () => {
   });
 
   const filtered = activeTab === "all" ? transactions : transactions.filter(t => t.type === activeTab);
+
+  // Calculate cashback stats
+  const cashbackStats = useMemo(() => {
+    const earnedRewards = transactions
+      .filter(t => t.type === "earning" && t.method === "Cashback" && t.status === "completed")
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    // Pending deposits × 5% = pending rewards
+    const pendingRewards = transactions
+      .filter(t => t.type === "deposit" && t.status === "pending")
+      .reduce((sum, t) => sum + Number(t.amount) * 0.05, 0);
+
+    const pendingRounded = Math.round(pendingRewards * 100) / 100;
+
+    return { earnedRewards, pendingRewards: pendingRounded };
+  }, [transactions]);
 
   const submitMutation = useMutation({
     mutationFn: async () => {
@@ -129,6 +145,52 @@ const WalletPage = () => {
       </div>
 
       <div className="px-5 space-y-5">
+        {/* Cashback Reward Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-background to-accent/10 p-5"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-20 h-20 bg-accent/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center">
+                <BadgePercent className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-bold">5% Cashback</p>
+                <p className="text-xs text-muted-foreground">On every deposit</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3 text-center border border-border/30">
+                <IndianRupee className="w-4 h-4 text-primary mx-auto mb-1" />
+                <p className="text-base font-bold text-foreground">
+                  ₹{((profile?.balance ?? 0)).toLocaleString("en-IN", { minimumFractionDigits: 0 })}
+                </p>
+                <p className="text-[10px] text-muted-foreground font-medium">Balance</p>
+              </div>
+              <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3 text-center border border-success/20">
+                <Gift className="w-4 h-4 text-success mx-auto mb-1" />
+                <p className="text-base font-bold text-success">
+                  ₹{cashbackStats.earnedRewards.toLocaleString("en-IN", { minimumFractionDigits: 0 })}
+                </p>
+                <p className="text-[10px] text-muted-foreground font-medium">Earned</p>
+              </div>
+              <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3 text-center border border-warning/20">
+                <Clock className="w-4 h-4 text-warning mx-auto mb-1" />
+                <p className="text-base font-bold text-warning">
+                  ₹{cashbackStats.pendingRewards.toLocaleString("en-IN", { minimumFractionDigits: 0 })}
+                </p>
+                <p className="text-[10px] text-muted-foreground font-medium">Pending</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Balance Card */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-5">
           <p className="text-sm text-muted-foreground mb-1">Available Balance</p>

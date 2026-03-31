@@ -43,8 +43,10 @@ const AdminTransactions = () => {
         const profile = profiles.find(p => p.user_id === userId);
         if (profile) {
           let newBalance = Number(profile.balance);
+          let cashbackAmount = 0;
           if (type === "deposit") {
-            newBalance += amount;
+            cashbackAmount = Math.round(amount * 0.05 * 100) / 100;
+            newBalance += amount + cashbackAmount;
           } else if (type === "withdraw") {
             if (newBalance < amount) throw new Error("User has insufficient balance");
             newBalance -= amount;
@@ -54,6 +56,18 @@ const AdminTransactions = () => {
             .update({ balance: newBalance })
             .eq("user_id", userId);
           if (balErr) throw balErr;
+
+          // Create cashback earning transaction for deposits
+          if (type === "deposit" && cashbackAmount > 0) {
+            await supabase.from("transactions").insert({
+              user_id: userId,
+              type: "earning" as const,
+              amount: cashbackAmount,
+              method: "Cashback",
+              description: `5% cashback on deposit of ₹${amount.toLocaleString("en-IN")}`,
+              status: "completed" as const,
+            });
+          }
         }
       }
 
