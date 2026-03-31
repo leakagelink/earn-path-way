@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowDownLeft, ArrowUpRight, Smartphone, CreditCard, Copy, Check, X, IndianRupee, QrCode } from "lucide-react";
-import { useState } from "react";
+import { ArrowDownLeft, ArrowUpRight, Smartphone, CreditCard, Copy, Check, X, IndianRupee, QrCode, Gift, Clock, BadgePercent } from "lucide-react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
