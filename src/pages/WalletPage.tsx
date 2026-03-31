@@ -143,6 +143,7 @@ const WalletPage = () => {
     setFormMode(null);
     setAmount("");
     setTransactionId("");
+    setSelectedMethodId(null);
     setUpiId("");
     setAccountHolder("");
     setAccountNumber("");
