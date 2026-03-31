@@ -17,6 +17,7 @@ import Support from "./pages/Support";
 import Settings from "./pages/Settings";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminOffers from "./pages/AdminOffers";
+import AdminTransactions from "./pages/AdminTransactions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
