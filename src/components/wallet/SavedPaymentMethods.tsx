@@ -89,7 +89,7 @@ const SavedPaymentMethods = () => {
   };
 
   const getDisplayDetails = (method: typeof methods[0]) => {
-    if (method.type === "UPI") return method.details;
+    if (method.type === "upi") return method.details;
     try {
       const d = JSON.parse(method.details);
       return `A/C: ****${d.account.slice(-4)} | ${d.ifsc}`;
@@ -190,9 +190,9 @@ const SavedPaymentMethods = () => {
           >
             <div className="flex items-center gap-3">
               <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
-                m.type === "UPI" ? "bg-info/10" : "bg-accent/10"
+                m.type === "upi" ? "bg-info/10" : "bg-accent/10"
               }`}>
-                {m.type === "UPI" ? (
+                {m.type === "upi" ? (
                   <Smartphone className="w-4 h-4 text-info" />
                 ) : (
                   <CreditCard className="w-4 h-4 text-accent-foreground" />
