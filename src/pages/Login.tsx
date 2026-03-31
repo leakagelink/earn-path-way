@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Wallet } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import logo from "@/assets/logo.png";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -34,9 +35,7 @@ const Login = () => {
         className="w-full max-w-sm space-y-8"
       >
         <div className="text-center space-y-3">
-          <div className="w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-primary/20">
-            <Wallet className="w-8 h-8 text-primary-foreground" />
-          </div>
+          <img src={logo} alt="Good Wallet" className="w-20 h-20 rounded-2xl mx-auto shadow-lg shadow-primary/20 object-cover" />
           <h1 className="text-2xl font-bold">Good Wallet</h1>
           <p className="text-muted-foreground text-sm">Your Path to Earning</p>
         </div>
