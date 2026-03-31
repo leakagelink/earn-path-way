@@ -230,7 +230,7 @@ const Dashboard = () => {
                         <Check className="w-4 h-4" /> Claimed
                       </div>
                     ) : (
-                      <Button onClick={() => claimMutation.mutate(offer.id)} disabled={claimMutation.isPending} className="w-full gradient-primary text-primary-foreground font-semibold shadow-md shadow-primary/20">
+                      <Button onClick={() => handleClaimOffer(offer)} className="w-full gradient-primary text-primary-foreground font-semibold shadow-md shadow-primary/20">
                         Claim Offer
                       </Button>
                     )}
