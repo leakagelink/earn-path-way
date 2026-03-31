@@ -1,29 +1,20 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowDownLeft, ArrowUpRight, Wallet, Bell, Eye, EyeOff, Shield, X, CheckCircle, XCircle, Clock } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Wallet, Bell, Eye, EyeOff, Shield, X, CheckCircle, XCircle, Clock, Gift, Check } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const Dashboard = () => {
   const [showBalance, setShowBalance] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
-  const { profile, isAdmin } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const queryClient = useQueryClient();
-
-  const { data: transactions = [] } = useQuery({
-    queryKey: ["recent-transactions"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("transactions")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(5);
-      return data || [];
-    },
-  });
+  const navigate = useNavigate();
 
   const { data: totals } = useQuery({
     queryKey: ["transaction-totals"],
@@ -48,6 +39,22 @@ const Dashboard = () => {
     },
   });
 
+  const { data: offers = [] } = useQuery({
+    queryKey: ["offers"],
+    queryFn: async () => {
+      const { data } = await supabase.from("offers").select("*").eq("is_active", true).order("amount");
+      return data || [];
+    },
+  });
+
+  const { data: claimedIds = [] } = useQuery({
+    queryKey: ["claimed-offers"],
+    queryFn: async () => {
+      const { data } = await supabase.from("claimed_offers").select("offer_id");
+      return (data || []).map(c => c.offer_id);
+    },
+  });
+
   const unreadCount = notifications.filter((n: any) => !n.is_read).length;
 
   const markReadMutation = useMutation({
@@ -57,6 +64,19 @@ const Dashboard = () => {
       await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+
+  const claimMutation = useMutation({
+    mutationFn: async (offerId: string) => {
+      const { error } = await supabase.from("claimed_offers").insert({ offer_id: offerId, user_id: user!.id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["claimed-offers"] });
+      toast.success("Offer claimed! Now deposit to activate.");
+      navigate("/wallet");
+    },
+    onError: (e: any) => toast.error(e.message),
   });
 
   const handleOpenNotifications = () => {
@@ -184,38 +204,49 @@ const Dashboard = () => {
           ))}
         </div>
 
+        {/* Offers Section */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold">Recent Activity</h2>
-            <Link to="/wallet" className="text-sm text-primary">View All</Link>
+            <h2 className="font-semibold">Available Offers</h2>
+            <Link to="/offers" className="text-sm text-primary">View All</Link>
           </div>
           <div className="space-y-2.5">
-            {transactions.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">No transactions yet</p>
+            {offers.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No offers available</p>
             )}
-            {transactions.map((tx, i) => (
-              <motion.div key={tx.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} className="glass-card p-3.5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
-                    tx.type === "deposit" ? "bg-success/10" : tx.type === "earning" || tx.type === "commission" ? "bg-info/10" : "bg-warning/10"
-                  }`}>
-                    {tx.type === "withdraw" ? <ArrowUpRight className="w-4 h-4 text-warning" /> : <ArrowDownLeft className="w-4 h-4 text-success" />}
+            {offers.slice(0, 4).map((offer, i) => {
+              const claimed = claimedIds.includes(offer.id);
+              return (
+                <motion.div key={offer.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }} className="glass-card p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${claimed ? "bg-muted" : "gradient-primary shadow-md shadow-primary/20"}`}>
+                        <Gift className={`w-5 h-5 ${claimed ? "text-muted-foreground" : "text-primary-foreground"}`} />
+                      </div>
+                      <div>
+                        <p className="font-semibold">₹{Number(offer.amount).toLocaleString("en-IN")}</p>
+                        <p className="text-xs text-muted-foreground">Code: {offer.code}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-success font-bold text-sm">+₹{Number(offer.income)}</span>
+                      <p className="text-xs text-muted-foreground">income</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium capitalize">{tx.type}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(tx.created_at).toLocaleDateString()}</p>
+                  <div className="mt-3">
+                    {claimed ? (
+                      <div className="flex items-center justify-center gap-2 py-2 rounded-lg bg-muted text-muted-foreground text-sm">
+                        <Check className="w-4 h-4" /> Claimed
+                      </div>
+                    ) : (
+                      <Button onClick={() => claimMutation.mutate(offer.id)} disabled={claimMutation.isPending} className="w-full gradient-primary text-primary-foreground font-semibold shadow-md shadow-primary/20">
+                        Claim Offer
+                      </Button>
+                    )}
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className={`text-sm font-semibold ${tx.type === "withdraw" ? "text-warning" : "text-success"}`}>
-                    {tx.type === "withdraw" ? "-" : "+"}₹{Number(tx.amount).toLocaleString("en-IN")}
-                  </p>
-                  <p className={`text-xs capitalize ${
-                    tx.status === "completed" ? "text-success" : tx.status === "rejected" ? "text-destructive" : "text-muted-foreground"
-                  }`}>{tx.status}</p>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </div>
